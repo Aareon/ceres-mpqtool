@@ -1,6 +1,7 @@
 use std::error::Error;
 use std::fs;
 use std::io;
+use std::fs::File;
 use std::io::BufReader;
 use std::io::Write;
 use std::path::Path;
@@ -8,6 +9,7 @@ use std::path::PathBuf;
 use std::str::FromStr;
 
 use ceres_mpq::*;
+use ceres_mpq::header::FileHeader;
 use clap::{app_from_crate, crate_authors, crate_description, crate_name, crate_version};
 use clap::{AppSettings, Arg, ArgMatches, SubCommand};
 use glob::Pattern as GlobPattern;
@@ -116,6 +118,18 @@ fn main() {
                         .required(true),
                 )
         )
+        .subcommand(
+            SubCommand::with_name("info")
+                .about("outputs FileHeader information of an archive")
+                .arg(
+                    Arg::with_name("archive")
+                        .index(1)
+                        .value_name("archive")
+                        .help("archive file to extract from")
+                        .takes_value(true)
+                        .required(true),
+                ),
+        )
         .get_matches_safe();
 
     let result = match matches {
@@ -125,6 +139,7 @@ fn main() {
             ("view", Some(matches)) => command_view(matches),
             ("list", Some(matches)) => command_list(matches),
             ("new", Some(matches)) => command_new(matches),
+            ("info", Some(matches)) => command_info(matches),
             (cmd, _) => {
                 eprintln!("Unknown subcommand {} encountered", cmd);
                 std::process::exit(1)
@@ -304,4 +319,23 @@ fn create_dir<P: AsRef<Path>>(dir: P) -> Result<(), ToolError> {
         cause: error,
         path: dir.as_ref().to_owned(),
     })
+}
+
+fn command_info(matches: &ArgMatches) -> Result<(), AnyError> {
+    // Retrieve the path of the archive from the command line arguments.
+    let archive_path = matches.value_of("archive").expect("archive path is required");
+    
+    // Open the archive file in read-only mode.
+    let archive_file = File::open(archive_path).map_err(|cause| Error { cause })?;
+    
+    // Wrap the archive file in a BufReader for efficient reading.
+    let mut reader = BufReader::new(archive_file);
+
+    // Read the file header from the archive.
+    let file_header = FileHeader::from_reader(&mut reader)?;
+
+    // Display the file header information to the user.
+    println!("File Header Information: {:#?}", file_header);
+
+    Ok(())
 }
