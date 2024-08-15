@@ -11,7 +11,7 @@ categories = ["encoding", "parsing", "command-line-utilities"]
 license = "MIT"
 
 [dependencies]
-ceres-mpq = "0.1.8"
+ceres-mpq = { git = "https://github.com/Aareon/ceres-mpq.git", branch = "master" }
 clap = "2.33.0"
 err-derive = "0.2.2"
 glob = "0.3.0"
